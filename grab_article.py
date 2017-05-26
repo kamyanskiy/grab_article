@@ -20,21 +20,17 @@ from formatters import ParseHelper
 class TextGrabber(object):
     def __init__(self, url, *args, **kwargs):
         self.url = url
-        self.article_as_list = []
-        self.article_text = ''
         self.parser = ParseHelper()
-        self.content = None
-        self.soup = None
         self.verbose = kwargs.get('verbose')
 
-    def download(self):
-        response = requests.get(self.url)
+    def download(self, url):
+        response = requests.get(url)
         if response.status_code == 200:
             if self.verbose:
-                print("Page {} was downloaded successful.\n".format(self.url))
+                print("Page {} was downloaded successful.\n".format(url))
         else:
             sys.exit(1)
-        self.content = response.content
+        return response.content
 
     def clean_html(self, soup):
         skip_tags = ['aside', 'script', 'style']
@@ -42,14 +38,14 @@ class TextGrabber(object):
             tag.extract()
         return soup
 
-    def _get_path_from_url(self):
-        url_parsed = urlparse(self.url)
+    def _get_path_from_url(self, url):
+        url_parsed = urlparse(url)
         full_path = url_parsed.netloc + url_parsed.path
         if full_path.endswith("shtml"):
             return full_path.replace('shtml', 'txt')
         elif full_path.endswith("html"):
             return full_path.replace('html', 'txt')
-        splitted = self.url.split("/")[2:]
+        splitted = url.split("/")[2:]
         last_item = splitted[-1]
         if not last_item:
             filename = splitted[-2] + ".txt"
@@ -59,35 +55,35 @@ class TextGrabber(object):
             filename = "default.txt"
         return os.path.join(*splitted, filename)
 
-    def save_result(self):
-        if not self.article_as_list:
+    def save_result(self, text):
+        if not text:
             raise TextGrabberError("Article was not parsed,"
                                    " run parse method first, please.")
-        path = self._get_path_from_url()
+        path = self._get_path_from_url(self.url)
         directories = ntpath.dirname(path)
         if not os.path.exists(directories):
             os.makedirs(directories)
         with open(path, encoding="utf-8", mode="w+") as fp:
-            fp.write(self.article_text)
+            fp.write(text)
         if self.verbose:
             print("File was successfully stored as {0}".format(path))
 
     def build(self):
-        self.download()
-        soup = BeautifulSoup(self.content, "html.parser")
+        content = self.download(self.url)
+        soup = BeautifulSoup(content, "html.parser")
         # remove all unnecessary tags like <script>, <style>
-        self.soup = self.clean_html(soup)
-        self.parse()
-        self.save_result()
+        soup = self.clean_html(soup)
+        text = self.parse(soup)
+        self.save_result(text)
 
-    def parse(self):
-        if self.content is None:
+    def parse(self, soup):
+        if soup is None:
             raise TextGrabberError("Content is None, run download first.")
-        title = self.get_title()
-        self.article_as_list.append(title)
-        self.get_article()
+        title = self.get_title(soup)
+        article_text = self.get_article(soup)
+        return title + "\n\n" + article_text
 
-    def get_title(self):
+    def get_title(self, soup):
         """
         We suppose that's most possible article title might be in:
         1. <title> tag
@@ -96,8 +92,8 @@ class TextGrabber(object):
         :return: string , title of article
         """
         splitters = [":", "|", "-"]
-        title_tag_items = self.soup.select("title")
-        title_h1_items = self.soup.select("h1")
+        title_tag_items = soup.select("title")
+        title_h1_items = soup.select("h1")
         title_from_tag = ''
         title_from_h1 = ''
         if len(title_h1_items) > 0:
@@ -122,11 +118,11 @@ class TextGrabber(object):
         title = title_from_tag.split(possible_splitter)[0]
         return title.strip()
 
-    def _get_article_nodes(self):
+    def _get_article_nodes(self, soup):
         node_tags = ["p", "pre", "td"]
         nodes = []
         for tag in node_tags:
-            search = self.soup.select(tag)
+            search = soup.select(tag)
             if search:
                 nodes += search
         return nodes
@@ -141,9 +137,9 @@ class TextGrabber(object):
                 best_node = node
         return best_node
 
-    def get_article(self):
+    def get_article(self, soup):
         """
-        Set instance attributes: article_as_list, article_text
+        Returns article text 
 
         1. Suppose that more possible that article might be found by tags
         <p>, <pre>, <td>
@@ -153,19 +149,20 @@ class TextGrabber(object):
         3. Get text with rules:
             3.1 every paragraph as separate string
             3.2 if <a> tag inside <p> - format to string [href.value] text
-        :return: None
+        :return: string
 
         """
-
-        nodes_to_process = self._get_article_nodes()
+        article_list = []
+        nodes_to_process = self._get_article_nodes(soup)
         best_node = self._get_best_node(nodes_to_process)
         parent_node = best_node.parent
         for node in parent_node.children:
             if isinstance(node, Tag) and node.name in ["p", "pre", "td"]:
-                self.article_as_list.append(self.parser.format_text_line(node))
-        self.article_text = self.parser.format_text(self.article_as_list)
+                article_list.append(self.parser.format_text_line(node))
+        article_text = self.parser.format_text(article_list)
         if self.verbose:
-            print(self.article_text)
+            print(article_text)
+        return article_text
 
 
 if __name__ == "__main__":
