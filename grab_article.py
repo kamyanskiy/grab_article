@@ -17,9 +17,6 @@ from exceptions import TextGrabberError
 from formatters import ParseHelper
 
 
-# url = "https://www.gazeta.ru/culture/2017/05/25/a_10693097.shtml"
-# url = "https://lenta.ru/news/2017/05/25/ka62/"
-
 class TextGrabber(object):
     def __init__(self, url, *args, **kwargs):
         self.url = url
