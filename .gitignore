@@ -3,6 +3,9 @@ bin/
 include/
 share/
 pip-selfcheck.json
+Scripts/
+Lib/
+tcl/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
