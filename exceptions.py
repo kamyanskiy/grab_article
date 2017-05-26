@@ -1,0 +1,2 @@
+class TextGrabberError(AttributeError):
+    pass
