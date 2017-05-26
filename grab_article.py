@@ -67,7 +67,7 @@ class TextGrabber(object):
         directories = ntpath.dirname(path)
         if not os.path.exists(directories):
             os.makedirs(directories)
-        with open(path, "w+") as fp:
+        with open(path, encoding="utf-8", mode="w+") as fp:
             fp.write(self.article_text)
         if self.verbose:
             print("File was successfully stored as {0}".format(path))
