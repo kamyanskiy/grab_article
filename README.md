@@ -1,14 +1,10 @@
-### Parse HTML into structured text.
+# Parse HTML into structured text.
 
-## On Linux:
-
+### On Linux:
+```
 $ virtualenv -p python3.6 .
 $ source bin/activate 
 $ pip install -r requirements.txt
-
- # TODO: Add info about env on Windows
-  
- ```
 $ ./grab_article.py -h
 usage: grab_article.py [-h] [-v] url
 
@@ -21,6 +17,26 @@ optional arguments:
   -h, --help     show this help message and exit
   -v, --verbose  Verbose output
 ```
+#### On Windows (in cmd)
+```
+E:\> cd grab_article
+E:\grab_article> virtualenv.exe .
+E:\grab_article> Scripts\activate.bat
+(grab_article) E:\grab_article> pip install -r requirements.txt
+
+(grab_article) E:\grab_article> grab_article.py -h
+usage: grab_article.py [-h] [-v] url
+
+Parse HTML into structured text.
+
+positional arguments:
+  url            URL to grab html from.
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  Verbose output
+
+```  
 
 ### Examples 
 
